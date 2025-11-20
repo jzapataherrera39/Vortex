@@ -1,4 +1,5 @@
 import axios from 'axios';
+import authStore from '../store/authStore'; // Ahora sí lo usamos
 
 const api = axios.create({
   baseURL: 'http://localhost:5000/api',
@@ -6,16 +7,15 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-      const authStorage = localStorage.getItem('auth-storage');
-    if (authStorage) {
-      const token = JSON.parse(authStorage).state.token;
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    // LEER DESDE ZUSTAND DIRECTAMENTE (Más limpio)
+    const token = authStore.getState().token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config;   },
+    return config;
+  },
   (error) => {
-  
     return Promise.reject(error);
   }
 );

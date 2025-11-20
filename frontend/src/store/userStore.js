@@ -1,45 +1,74 @@
 import { create } from "zustand";
-import useAuthStore from "./authStore"; // Importamos authStore para obtener el token
-
-// URL base del backend (Asegúrate que coincida con tu puerto)
-const API_URL = "http://localhost:5000/api";
+import api from "../api/api"; // Importamos tu instancia configurada con el interceptor
 
 const userStore = create((set, get) => ({
-  users: [], // Estado inicial como array vacío
-  
-  fetchUsers: async () => {
-    // Obtenemos el token de la store de auth
-    const token = useAuthStore.getState().token;
-    
-    if (!token) {
-        set({ users: [] }); // Si no hay token, limpiamos usuarios
-        return;
-    }
+  users: [],
 
+  // 1. Obtener todos los usuarios
+  fetchUsers: async () => {
     try {
-      const res = await fetch(`${API_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) throw new Error('Error al obtener usuarios');
-      
-      const data = await res.json();
-      
-      // --- CORRECCIÓN CRÍTICA ---
-      // Verificamos si 'data' es un array. Si no, intentamos buscar data.users o devolvemos array vacío.
-      // Esto evita el error "users.map is not a function"
-      const userArray = Array.isArray(data) ? data : (data.users || []);
-      
-      set({ users: userArray });
-      
+      // Usamos api.get, el token se inyecta solo gracias a api.js
+      const { data } = await api.get("/users");
+      set({ users: data });
+      return data;
     } catch (error) {
       console.error("Error fetching users:", error);
-      set({ users: [] }); // En caso de error, aseguramos que sea un array vacío
+      return [];
     }
   },
 
-  // ... mantén el resto de funciones (createUser, updateUser, toggleUserState) igual ...
-  // Asegúrate de usar useAuthStore.getState().token en ellas también.
+  // 2. Crear usuario
+  createUser: async (userData) => {
+    try {
+      const { data } = await api.post("/users", userData);
+      
+      // Actualizamos el estado localmente para que la lista se vea actualizada de inmediato
+      set((state) => ({ users: [...state.users, data] }));
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error creating user:", error);
+      // Devolvemos info útil del error para mostrar alertas en el componente
+      const errorMessage = error.response?.data?.message || "Error al crear usuario";
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  // 3. Editar usuario
+  updateUser: async (id, userData) => {
+    try {
+      const { data } = await api.put(`/users/${id}`, userData);
+      
+      // Actualizamos solo el usuario modificado en la lista
+      set((state) => ({
+        users: state.users.map((user) => (user._id === id ? data : user)),
+      }));
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return { success: false, message: error.response?.data?.message || "Error al actualizar" };
+    }
+  },
+
+  // 4. Activar/Inactivar usuario
+  toggleUserState: async (id, newState) => {
+    try {
+      const { data } = await api.put(`/users/${id}/toggle`, { state: newState });
+      
+      // Actualizamos el estado específico del usuario en la lista
+      set((state) => ({
+        users: state.users.map((user) => 
+          user._id === id ? { ...user, state: data.state } : user
+        ),
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error("Error toggling user state:", error);
+      return false;
+    }
+  },
 }));
 
 export default userStore;

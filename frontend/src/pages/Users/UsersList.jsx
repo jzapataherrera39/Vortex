@@ -3,15 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import {
   Paper, Box, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Button, Dialog, DialogActions, DialogContent,
-  DialogContentText, DialogTitle, Chip
+  DialogContentText, DialogTitle, Chip, Snackbar, Alert, CircularProgress
 } from '@mui/material';
 import userStore from '../../store/userStore';
 
 export default function UsersList() {
   const { users, fetchUsers, toggleUserState } = userStore();
   const navigate = useNavigate();
+  
+  // Estados para el diálogo y la acción
   const [openDialog, setOpenDialog] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(false); // Nuevo: Estado de carga
+
+  // Estados para notificaciones (Snackbar)
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' // 'success' | 'error'
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -24,17 +34,46 @@ export default function UsersList() {
 
   const handleToggleConfirm = async () => {
     if (userToToggle) {
-      const newState = userToToggle.state === 'activo' ? 'inactivo' : 'activo';
-      // Llamamos a la función del store corregida
-      await toggleUserState(userToToggle._id, newState);
-      setOpenDialog(false);
-      setUserToToggle(null);
+      setLoadingAction(true); // 1. Iniciamos carga
+      try {
+        const newState = userToToggle.state === 'activo' ? 'inactivo' : 'activo';
+        const result = await toggleUserState(userToToggle._id, newState);
+
+        if (result) {
+            // 2. Éxito
+            setSnackbar({
+                open: true,
+                message: `Usuario ${userToToggle.nombre} ${newState === 'activo' ? 'activado' : 'inactivado'} correctamente.`,
+                severity: 'success'
+            });
+        } else {
+            throw new Error('Error en la operación');
+        }
+      } catch (error) {
+        // 3. Error
+        setSnackbar({
+            open: true,
+            message: 'Hubo un error al intentar cambiar el estado del usuario.',
+            severity: 'error'
+        });
+      } finally {
+        // 4. Limpieza
+        setLoadingAction(false);
+        setOpenDialog(false);
+        setUserToToggle(null);
+      }
     }
   };
 
   const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setUserToToggle(null);
+    if (!loadingAction) { // Evitar cerrar si está cargando
+        setOpenDialog(false);
+        setUserToToggle(null);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   return (
@@ -43,7 +82,6 @@ export default function UsersList() {
         <Typography variant="h4" component="h1" color="primary">
           Gestión de Usuarios
         </Typography>
-        {/* EL BOTÓN QUE FALTABA */}
         <Button 
           variant="contained" 
           color="primary"
@@ -77,6 +115,7 @@ export default function UsersList() {
                     color={user.state === 'activo' ? 'success' : 'error'}
                     size="small"
                     variant="outlined"
+                    sx={{ textTransform: 'capitalize' }} // Estilo visual
                   />
                 </TableCell>
                 <TableCell align="center">
@@ -108,6 +147,7 @@ export default function UsersList() {
         </Table>
       </TableContainer>
 
+      {/* Diálogo de Confirmación */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Confirmar Cambio de Estado</DialogTitle>
         <DialogContent>
@@ -116,12 +156,31 @@ export default function UsersList() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleToggleConfirm} color="primary" autoFocus variant="contained">
-            Confirmar
+          <Button onClick={handleCloseDialog} disabled={loadingAction}>Cancelar</Button>
+          <Button 
+            onClick={handleToggleConfirm} 
+            color="primary" 
+            autoFocus 
+            variant="contained"
+            disabled={loadingAction} // Deshabilitar durante carga
+            startIcon={loadingAction ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {loadingAction ? 'Procesando...' : 'Confirmar'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Notificaciones Toast/Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 }
