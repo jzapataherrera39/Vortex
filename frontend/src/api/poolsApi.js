@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/pools';
+const API_URL = 'http://localhost:5000/api/piscinas';
 
 const getToken = () => {
   const authStorage = JSON.parse(localStorage.getItem('auth-storage'));

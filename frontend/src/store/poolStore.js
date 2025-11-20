@@ -5,7 +5,7 @@ import {
   createPool,
   updatePool,
   deletePool
-} from "../api/poolApi";
+} from "../api/poolsApi";
 
 const poolStore = create((set, get) => ({
   pools: [],
@@ -21,7 +21,6 @@ const poolStore = create((set, get) => ({
       set({ loading: false });
     }
   },
-
   addPool: async (poolData) => {
     try {
       const newPool = await createPool(poolData);

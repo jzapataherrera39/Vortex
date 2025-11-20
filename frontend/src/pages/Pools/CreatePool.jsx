@@ -10,12 +10,17 @@ const CreatePool = () => {
     const navigate = useNavigate();
     const [error, setError] = useState('');
     const [filteredCities, setFilteredCities] = useState([]);
+    const [fileNames, setFileNames] = useState({
+        foto: '',
+        hojaSeguridad: '',
+        fichaTecnica: '',
+    });
     const [formData, setFormData] = useState({
         nombre: '',
         direccion: '',
         altura: '',
         ancho: '',
-        departamento: '', // Renamed from municipio
+        departamento: '', 
         ciudad: '',
         categoria: '',
         profundidades: '',
@@ -34,7 +39,7 @@ const CreatePool = () => {
         setFormData({
             ...formData,
             departamento: selectedDepartamento,
-            ciudad: '' // Reset city on department change
+            ciudad: '' 
         });
         
         setFilteredCities(deptoData ? deptoData.ciudades : []);
@@ -45,7 +50,14 @@ const CreatePool = () => {
     };
 
     const handleFileChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.files[0] });
+        const { name, files } = e.target;
+        if (files && files[0]) {
+            setFormData({ ...formData, [name]: files[0] });
+            setFileNames({ ...fileNames, [name]: files[0].name });
+        } else {
+            setFormData({ ...formData, [name]: null });
+            setFileNames({ ...fileNames, [name]: '' });
+        }
     };
 
     const handleBombaChange = (index, e) => {
@@ -55,13 +67,20 @@ const CreatePool = () => {
     };
 
     const handleBombaFileChange = (index, e) => {
+        const { name, files } = e.target;
         const newBombas = [...formData.bombas];
-        newBombas[index][e.target.name] = e.target.files[0];
+        if (files && files[0]) {
+            newBombas[index][name] = files[0];
+            newBombas[index].fotoFileName = files[0].name; // Store file name for display
+        } else {
+            newBombas[index][name] = null;
+            newBombas[index].fotoFileName = '';
+        }
         setFormData({ ...formData, bombas: newBombas });
     };
 
     const addBomba = () => {
-        setFormData({ ...formData, bombas: [...formData.bombas, { marca: '', referencia: '', potencia: '', material: '', seRepite: 'no', totalBombas: 1, foto: null }] });
+        setFormData({ ...formData, bombas: [...formData.bombas, { marca: '', referencia: '', potencia: '', material: '', seRepite: 'no', totalBombas: 1, foto: null, fotoFileName: '' }] });
     };
 
     const removeBomba = (index) => {
@@ -74,22 +93,37 @@ const CreatePool = () => {
         e.preventDefault();
         setError('');
         const data = new FormData();
-        // Append all fields to FormData
-        for (const key in formData) {
+
+        // Create a copy of formData to modify before sending
+        const dataToSend = { ...formData };
+
+        // 1. Rename 'departamento' to 'municipio' for the backend
+        dataToSend.municipio = dataToSend.departamento;
+        delete dataToSend.departamento;
+
+        // 2. Convert 'profundidades' string to a JSON string array
+        if (dataToSend.profundidades && typeof dataToSend.profundidades === 'string') {
+            const profundidadesArray = dataToSend.profundidades.split(',').map(p => p.trim());
+            dataToSend.profundidades = JSON.stringify(profundidadesArray);
+        }
+        
+        for (const key in dataToSend) {
             if (key === 'bombas') {
-                formData.bombas.forEach((bomba, index) => {
+                dataToSend.bombas.forEach((bomba, index) => {
                     for (const bombaKey in bomba) {
-                        data.append(`bombas[${index}][${bombaKey}]`, bomba[bombaKey]);
+                        if (bombaKey !== 'fotoFileName') { // Exclude display-only field
+                            data.append(`bombas[${index}][${bombaKey}]`, bomba[bombaKey]);
+                        }
                     }
                 });
-            } else if (formData[key]) { // Only append if value is not null/empty
-                data.append(key, formData[key]);
+            } else if (dataToSend[key]) {
+                data.append(key, dataToSend[key]);
             }
         }
 
         try {
             await createPool(data);
-            navigate('/pools'); // Redirect on success
+            navigate('/pools'); 
         } catch (err) {
             console.error('Failed to create pool:', err);
             setError(err.response?.data?.message || 'Error al crear la piscina. Verifique los datos.');
@@ -151,18 +185,29 @@ const CreatePool = () => {
                     </Select>
                 </FormControl>
                 
-                <Button variant="outlined" component="label" fullWidth sx={{ mt: 2, mb: 1 }}>
-                    Subir Foto Principal (PNG/JPEG)
-                    <input type="file" name="foto" hidden onChange={handleFileChange} accept="image/png, image/jpeg" />
-                </Button>
-                <Button variant="outlined" component="label" fullWidth sx={{ mb: 1 }}>
-                    Subir Hoja de Seguridad (PDF)
-                    <input type="file" name="hojaSeguridad" hidden onChange={handleFileChange} accept="application/pdf" />
-                </Button>
-                <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
-                    Subir Ficha Técnica (PDF)
-                    <input type="file" name="fichaTecnica" hidden onChange={handleFileChange} accept="application/pdf" />
-                </Button>
+                <Box sx={{ mt: 2, mb: 1 }}>
+                    <Button variant="outlined" component="label" fullWidth>
+                        Subir Foto Principal (PNG/JPEG)
+                        <input type="file" name="foto" hidden onChange={handleFileChange} accept="image/png, image/jpeg" />
+                    </Button>
+                    {fileNames.foto && <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>Archivo: {fileNames.foto}</Typography>}
+                </Box>
+                
+                <Box sx={{ mb: 1 }}>
+                    <Button variant="outlined" component="label" fullWidth>
+                        Subir Hoja de Seguridad (PDF)
+                        <input type="file" name="hojaSeguridad" hidden onChange={handleFileChange} accept="application/pdf" />
+                    </Button>
+                    {fileNames.hojaSeguridad && <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>Archivo: {fileNames.hojaSeguridad}</Typography>}
+                </Box>
+
+                <Box sx={{ mb: 2 }}>
+                    <Button variant="outlined" component="label" fullWidth>
+                        Subir Ficha Técnica (PDF)
+                        <input type="file" name="fichaTecnica" hidden onChange={handleFileChange} accept="application/pdf" />
+                    </Button>
+                    {fileNames.fichaTecnica && <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>Archivo: {fileNames.fichaTecnica}</Typography>}
+                </Box>
 
                 <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>Bombas</Typography>
                 {formData.bombas.map((bomba, index) => (
@@ -188,10 +233,13 @@ const CreatePool = () => {
                         {bomba.seRepite === 'si' && (
                             <TextField name="totalBombas" label="Total Bombas" type="number" value={bomba.totalBombas} onChange={(e) => handleBombaChange(index, e)} fullWidth margin="normal" />
                         )}
-                        <Button variant="outlined" component="label" fullWidth sx={{ mt: 1 }}>
-                           Subir Foto de Bomba
-                           <input type="file" name="foto" hidden onChange={(e) => handleBombaFileChange(index, e)} accept="image/png, image/jpeg" />
-                        </Button>
+                        <Box sx={{ mt: 1 }}>
+                            <Button variant="outlined" component="label" fullWidth>
+                            Subir Foto de Bomba
+                            <input type="file" name="foto" hidden onChange={(e) => handleBombaFileChange(index, e)} accept="image/png, image/jpeg" />
+                            </Button>
+                            {bomba.fotoFileName && <Typography variant="body2" color="textSecondary" sx={{ mt: 0.5 }}>Archivo: {bomba.fotoFileName}</Typography>}
+                        </Box>
                     </Box>
                 ))}
                 <Button onClick={addBomba} startIcon={<AddCircleOutlineIcon />} sx={{ mt: 1, mb: 3 }}>Añadir Bomba</Button>
