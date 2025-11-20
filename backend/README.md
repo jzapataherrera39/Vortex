@@ -1,52 +1,36 @@
-# Backend
+# 🌪️ Vortex Backend
 
-This is the backend for the project.
+Este repositorio contiene la API RESTful del sistema **Vortex**, encargada de gestionar la lógica de negocio, autenticación y conexión a datos para la administración de piscinas y usuarios.
 
-## Getting Started
+Construido con **Node.js**, **Express** y **TypeScript** para garantizar escalabilidad y tipado estático robusto.
 
-To get started, you'll need to have Node.js and npm installed.
+## 🛠️ Tecnologías Clave
 
-1.  Install dependencies:
-    ```bash
-    npm install
-    ```
+* **Runtime:** Node.js
+* **Framework:** Express.js
+* **Lenguaje:** TypeScript
+* **Base de Datos:** MongoDB (con Mongoose)
+* **Autenticación:** JWT (JSON Web Tokens)
+* **Almacenamiento:** Cloudinary (Gestión de imágenes)
+* **Documentación:** Swagger UI
 
-2.  Run the development server:
-    ```bash
-    npm run dev
-    ```
+## 🚀 Instalación y Configuración
 
-## Scripts
+### 1. Prerrequisitos
+Asegúrate de tener instalado:
+* Node.js (v16 o superior)
+* MongoDB (Instancia local o Atlas URI)
 
-*   `start`: Starts the production server.
-*   `dev`: Starts the development server with auto-reloading.
-*   `build`: Compiles the TypeScript code to JavaScript.
+### 2. Instalación de dependencias
+```bash
+npm install
 
-## Dependencies
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/vortex_db
+JWT_SECRET=tu_secreto_super_seguro
+NODE_ENV=development
 
-*   [bcryptjs](https://www.npmjs.com/package/bcryptjs): Library for hashing passwords.
-*   [cloudinary](https://www.npmjs.com/package/cloudinary): Cloudinary SDK for Node.js.
-*   [cors](https://www.npmjs.com/package/cors): Middleware for enabling CORS.
-*   [dotenv](https://www.npmjs.com/package/dotenv): Loads environment variables from a `.env` file.
-*   [express](https://www.npmjs.com/package/express): Web framework for Node.js.
-*   [express-validator](https://www.npmjs.com/package/express-validator): Middleware for request validation.
-*   [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken): Library for generating and verifying JSON Web Tokens.
-*   [mongodb](https://www.npmjs.com/package/mongodb): MongoDB driver for Node.js.
-*   [mongoose](https://www.npmjs.com/package/mongoose): Object Data Modeling (ODM) library for MongoDB.
-*   [multer](https://www.npmjs.com/package/multer): Middleware for handling `multipart/form-data`.
-*   [streamifier](https://www.npmjs.com/package/streamifier): Converts a Buffer/String into a readable stream.
-*   [swagger-jsdoc](https://www.npmjs.com/package/swagger-jsdoc): Generates Swagger/OpenAPI documentation from JSDoc comments.
-*   [swagger-ui-express](https://www.npmjs.com/package/swagger-ui-express): Serves Swagger UI.
-
-## Dev Dependencies
-
-*   [@types/bcryptjs](https://www.npmjs.com/package/@types/bcryptjs): TypeScript definitions for bcryptjs.
-*   [@types/cors](https://www.npmjs.com/package/@types/cors): TypeScript definitions for cors.
-*   [@types/express](https://www.npmjs.com/package/@types/express): TypeScript definitions for express.
-*   [@types/jsonwebtoken](https://www.npmjs.com/package/@types/jsonwebtoken): TypeScript definitions for jsonwebtoken.
-*   [@types/multer](https://www.npmjs.com/package/@types/multer): TypeScript definitions for multer.
-*   [@types/node](https://www.npmjs.com/package/@types/node): TypeScript definitions for Node.js.
-*   [@types/swagger-jsdoc](https://www.npmjs.com/package/@types/swagger-jsdoc): TypeScript definitions for swagger-jsdoc.
-*   [@types/swagger-ui-express](https://www.npmjs.com/package/@types/swagger-ui-express): TypeScript definitions for swagger-ui-express.
-*   [ts-node-dev](https://www.npmjs.com/package/ts-node-dev): TypeScript execution and hot-reloading for development.
-*   [typescript](https://www.npmjs.com/package/typescript): Typed superset of JavaScript.
+# Configuración de Cloudinary (Para subida de imágenes)
+CLOUDINARY_CLOUD_NAME=tu_cloud_name
+CLOUDINARY_API_KEY=tu_api_key
+CLOUDINARY_API_SECRET=tu_api_secret

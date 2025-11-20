@@ -1,46 +1,44 @@
-# Getting Started with Create React App
+# 🌪️ Vortex Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Panel administrativo y cliente web para el sistema **Vortex**. Permite la gestión intuitiva de usuarios y piscinas, ofreciendo una interfaz moderna y reactiva.
 
-## Available Scripts
+Desarrollado con **React** y **Material UI**, utilizando **Zustand** para una gestión de estado global ligera y eficiente.
 
-In the project directory, you can run:
+## 🎨 Tecnologías Clave
 
-### `npm start`
+* **Framework:** React.js
+* **UI Library:** Material UI (@mui/material)
+* **Estado Global:** Zustand 🐻
+* **Enrutamiento:** React Router DOM
+* **Cliente HTTP:** Axios (con interceptores para JWT)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## ⚡ Características
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+* 🔐 **Autenticación Segura:** Login persistente con manejo automático de tokens.
+* 👥 **Gestión de Usuarios:** Creación, edición e inactivación (Soft Delete) de usuarios.
+* 🏊 **Gestión de Piscinas:** CRUD completo con soporte para subida de imágenes.
+* 📱 **Diseño Responsivo:** Adaptable a diferentes tamaños de pantalla gracias a MUI.
+* 🛡️ **Rutas Protegidas:** Sistema de seguridad que restringe el acceso según el estado de autenticación.
 
-### `npm test`
+## 🚀 Puesta en Marcha
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 1. Instalación
+Navega a la carpeta del frontend e instala las dependencias:
 
-### `npm run build`
+```bash
+cd frontend
+npm install
+npm start
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### estructura del proyecto
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+src/
+├── api/            # Configuración de Axios e interceptores
+├── components/     # Componentes reutilizables (Forms, ProtectedRoute)
+├── data/           # Datos estáticos (e.g., departamentos de Colombia)
+├── pages/          # Vistas principales (Login, UsersList, PoolList)
+├── router/         # Configuración de rutas (AppRouter)
+├── services/       # (Opcional) Capa de servicio adicional
+├── store/          # Stores de Zustand (authStore, userStore, poolStore)
+└── App.jsx         # Componente raíz
