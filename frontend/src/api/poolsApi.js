@@ -2,7 +2,10 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api/pools';
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => {
+  const authStorage = JSON.parse(localStorage.getItem('auth-storage'));
+  return authStorage?.state?.token || null;
+};
 
 const getPools = async () => {
     const config = {

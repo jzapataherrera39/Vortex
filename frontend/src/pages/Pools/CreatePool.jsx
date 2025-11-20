@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Typography, Container, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { TextField, Button, Typography, Container, Select, MenuItem, InputLabel, FormControl, Box, IconButton, Alert } from '@mui/material';
 import { createPool } from '../../api/poolsApi';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const CreatePool = () => {
     const navigate = useNavigate();
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         nombre: '',
         direccion: '',
@@ -28,103 +31,120 @@ const CreatePool = () => {
 
     const handleFileChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.files[0] });
-    }
+    };
 
     const handleBombaChange = (index, e) => {
         const newBombas = [...formData.bombas];
         newBombas[index][e.target.name] = e.target.value;
         setFormData({ ...formData, bombas: newBombas });
-    }
+    };
 
     const handleBombaFileChange = (index, e) => {
         const newBombas = [...formData.bombas];
         newBombas[index][e.target.name] = e.target.files[0];
         setFormData({ ...formData, bombas: newBombas });
-    }
+    };
 
     const addBomba = () => {
         setFormData({ ...formData, bombas: [...formData.bombas, { marca: '', referencia: '', potencia: '', material: '', seRepite: 'no', totalBombas: 1, foto: null }] });
-    }
+    };
+
+    const removeBomba = (index) => {
+        const newBombas = [...formData.bombas];
+        newBombas.splice(index, 1);
+        setFormData({ ...formData, bombas: newBombas });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const poolData = new FormData();
+        setError('');
+        const data = new FormData();
+        // Append all fields to FormData
         for (const key in formData) {
             if (key === 'bombas') {
                 formData.bombas.forEach((bomba, index) => {
                     for (const bombaKey in bomba) {
-                        poolData.append(`bombas[${index}][${bombaKey}]`, bomba[bombaKey]);
+                        data.append(`bombas[${index}][${bombaKey}]`, bomba[bombaKey]);
                     }
                 });
-            } else {
-                poolData.append(key, formData[key]);
+            } else if (formData[key]) { // Only append if value is not null/empty
+                data.append(key, formData[key]);
             }
         }
-        await createPool(poolData);
-        navigate('/pools');
+
+        try {
+            await createPool(data);
+            navigate('/pools'); // Redirect on success
+        } catch (err) {
+            console.error('Failed to create pool:', err);
+            setError(err.response?.data?.message || 'Error al crear la piscina. Verifique los datos.');
+        }
     };
 
     return (
-        <Container>
-            <Typography variant="h4" gutterBottom>Create Pool</Typography>
-            <form onSubmit={handleSubmit}>
-                <TextField name="nombre" label="Nombre" onChange={handleChange} fullWidth margin="normal" />
-                <TextField name="direccion" label="Dirección" onChange={handleChange} fullWidth margin="normal" />
-                <TextField name="altura" label="Altura" onChange={handleChange} fullWidth margin="normal" />
-                <TextField name="ancho" label="Ancho" onChange={handleChange} fullWidth margin="normal" />
-                <TextField name="ciudad" label="Ciudad" onChange={handleChange} fullWidth margin="normal" />
-                <TextField name="municipio" label="Municipio" onChange={handleChange} fullWidth margin="normal" />
-                <FormControl fullWidth margin="normal">
+        <Container component="main" maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+            <Typography variant="h4" gutterBottom>Crear Nueva Piscina</Typography>
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                <TextField name="nombre" label="Nombre" onChange={handleChange} fullWidth margin="normal" required />
+                <TextField name="direccion" label="Dirección" onChange={handleChange} fullWidth margin="normal" required />
+                <TextField name="altura" label="Altura (metros)" onChange={handleChange} fullWidth margin="normal" required />
+                <TextField name="ancho" label="Ancho (metros)" onChange={handleChange} fullWidth margin="normal" required />
+                <TextField name="ciudad" label="Ciudad" onChange={handleChange} fullWidth margin="normal" required />
+                <TextField name="municipio" label="Municipio" onChange={handleChange} fullWidth margin="normal" required />
+                <FormControl fullWidth margin="normal" required>
                     <InputLabel>Categoría</InputLabel>
-                    <Select name="categoria" value={formData.categoria} onChange={handleChange}>
+                    <Select name="categoria" value={formData.categoria} label="Categoría" onChange={handleChange}>
                         <MenuItem value="Niños">Niños</MenuItem>
                         <MenuItem value="Adultos">Adultos</MenuItem>
                     </Select>
                 </FormControl>
-                <TextField name="profundidades" label="Profundidades (comma separated)" onChange={handleChange} fullWidth margin="normal" />
-                <FormControl fullWidth margin="normal">
+                <TextField name="profundidades" label="Profundidades (separadas por coma, en orden asc.)" onChange={handleChange} fullWidth margin="normal" required />
+                <FormControl fullWidth margin="normal" required>
                     <InputLabel>Forma</InputLabel>
-                    <Select name="forma" value={formData.forma} onChange={handleChange}>
+                    <Select name="forma" value={formData.forma} label="Forma" onChange={handleChange}>
                         <MenuItem value="Rectangular">Rectangular</MenuItem>
                         <MenuItem value="Circular">Circular</MenuItem>
                     </Select>
                 </FormControl>
-                <FormControl fullWidth margin="normal">
+                <FormControl fullWidth margin="normal" required>
                     <InputLabel>Uso</InputLabel>
-                    <Select name="uso" value={formData.uso} onChange={handleChange}>
+                    <Select name="uso" value={formData.uso} label="Uso" onChange={handleChange}>
                         <MenuItem value="Privada">Privada</MenuItem>
                         <MenuItem value="Publica">Pública</MenuItem>
                     </Select>
                 </FormControl>
-                <Button variant="contained" component="label">
-                    Upload Foto
-                    <input type="file" name="foto" hidden onChange={handleFileChange} />
+                
+                <Button variant="outlined" component="label" fullWidth sx={{ mt: 2, mb: 1 }}>
+                    Subir Foto Principal (PNG/JPEG)
+                    <input type="file" name="foto" hidden onChange={handleFileChange} accept="image/png, image/jpeg" />
                 </Button>
-                <Button variant="contained" component="label">
-                    Upload Hoja de Seguridad
-                    <input type="file" name="hojaSeguridad" hidden onChange={handleFileChange} />
+                <Button variant="outlined" component="label" fullWidth sx={{ mb: 1 }}>
+                    Subir Hoja de Seguridad (PDF)
+                    <input type="file" name="hojaSeguridad" hidden onChange={handleFileChange} accept="application/pdf" />
                 </Button>
-                <Button variant="contained" component="label">
-                    Upload Ficha Técnica
-                    <input type="file" name="fichaTecnica" hidden onChange={handleFileChange} />
+                <Button variant="outlined" component="label" fullWidth sx={{ mb: 2 }}>
+                    Subir Ficha Técnica (PDF)
+                    <input type="file" name="fichaTecnica" hidden onChange={handleFileChange} accept="application/pdf" />
                 </Button>
 
-                <Typography variant="h5" gutterBottom>Bombas</Typography>
+                <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>Bombas</Typography>
                 {formData.bombas.map((bomba, index) => (
-                    <div key={index}>
+                    <Box key={index} sx={{ border: '1px solid #ccc', borderRadius: 1, p: 2, mb: 2, position: 'relative' }}>
+                        <IconButton onClick={() => removeBomba(index)} sx={{ position: 'absolute', top: 8, right: 8 }}><DeleteIcon /></IconButton>
                         <TextField name="marca" label="Marca" value={bomba.marca} onChange={(e) => handleBombaChange(index, e)} fullWidth margin="normal" />
                         <TextField name="referencia" label="Referencia" value={bomba.referencia} onChange={(e) => handleBombaChange(index, e)} fullWidth margin="normal" />
                         <TextField name="potencia" label="Potencia" value={bomba.potencia} onChange={(e) => handleBombaChange(index, e)} fullWidth margin="normal" />
                         <FormControl fullWidth margin="normal">
                             <InputLabel>Material</InputLabel>
-                            <Select name="material" value={bomba.material} onChange={(e) => handleBombaChange(index, e)}>
+                            <Select name="material" value={bomba.material} label="Material" onChange={(e) => handleBombaChange(index, e)}>
                                 <MenuItem value="Sumergible">Sumergible</MenuItem>
                                 <MenuItem value="Centrifuga">Centrifuga</MenuItem>
                             </Select>
                         </FormControl>
                         <FormControl fullWidth margin="normal">
-                            <InputLabel>Se Repite?</InputLabel>
-                            <Select name="seRepite" value={bomba.seRepite} onChange={(e) => handleBombaChange(index, e)}>
+                            <InputLabel>¿Se Repite?</InputLabel>
+                            <Select name="seRepite" value={bomba.seRepite} label="¿Se Repite?" onChange={(e) => handleBombaChange(index, e)}>
                                 <MenuItem value="si">Si</MenuItem>
                                 <MenuItem value="no">No</MenuItem>
                             </Select>
@@ -132,16 +152,16 @@ const CreatePool = () => {
                         {bomba.seRepite === 'si' && (
                             <TextField name="totalBombas" label="Total Bombas" type="number" value={bomba.totalBombas} onChange={(e) => handleBombaChange(index, e)} fullWidth margin="normal" />
                         )}
-                        <Button variant="contained" component="label">
-                            Upload Bomba Foto
-                            <input type="file" name="foto" hidden onChange={(e) => handleBombaFileChange(index, e)} />
+                        <Button variant="outlined" component="label" fullWidth sx={{ mt: 1 }}>
+                           Subir Foto de Bomba
+                           <input type="file" name="foto" hidden onChange={(e) => handleBombaFileChange(index, e)} accept="image/png, image/jpeg" />
                         </Button>
-                    </div>
+                    </Box>
                 ))}
-                <Button onClick={addBomba}>Add Bomba</Button>
+                <Button onClick={addBomba} startIcon={<AddCircleOutlineIcon />} sx={{ mt: 1, mb: 3 }}>Añadir Bomba</Button>
 
-                <Button type="submit" variant="contained" color="primary">Create Pool</Button>
-            </form>
+                <Button type="submit" variant="contained" color="primary" fullWidth size="large">Guardar Piscina</Button>
+            </Box>
         </Container>
     );
 };
