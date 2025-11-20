@@ -1,47 +1,130 @@
-import { useEffect, useState } from "react";
-import userStore from "../../store/userStore";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Paper,
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Chip,
+} from '@mui/material';
+import userStore from '../../store/userStore';
 
 export default function UsersList() {
-  const { token, getUsers, toggleUserState } = userStore();
-  const [users, setUsers] = useState([]);
+  const { users, fetchUsers, toggleUserState } = userStore();
+  const navigate = useNavigate();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [userToToggle, setUserToToggle] = useState(null);
 
   useEffect(() => {
-    async function loadUsers() {
-      const res = await getUsers(token);
-      setUsers(res);
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleToggleClick = (user) => {
+    setUserToToggle(user);
+    setOpenDialog(true);
+  };
+
+  const handleToggleConfirm = async () => {
+    if (userToToggle) {
+      const newState = userToToggle.state === 'activo' ? 'inactivo' : 'activo';
+      await toggleUserState(userToToggle._id, newState);
+      setOpenDialog(false);
+      setUserToToggle(null);
+      fetchUsers(); // Recargar usuarios
     }
-    if (token) loadUsers();
-  }, [token, getUsers]);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setUserToToggle(null);
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Usuarios</h1>
+    <Paper sx={{ p: 3, margin: 'auto', maxWidth: 1200 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" component="h1">
+          Panel de Usuarios
+        </Typography>
+      </Box>
 
-      {users.map((u) => (
-        <div key={u._id} className="border p-3 rounded mb-3 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold">{u.nombre}</h3>
-            <p>{u.email}</p>
-            <p>Estado: {u.state}</p>
-          </div>
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <TableCell>Nombre</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Rol</TableCell>
+              <TableCell align="center">Estado</TableCell>
+              <TableCell align="center">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user._id}>
+                <TableCell component="th" scope="row">{user.nombre}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.rol}</TableCell>
+                <TableCell align="center">
+                  <Chip 
+                    label={user.state}
+                    color={user.state === 'activo' ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell align="center">
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    sx={{ mr: 1 }}
+                    onClick={() => navigate(`/admin/users/edit/${user._id}`)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color={user.state === 'activo' ? 'error' : 'success'}
+                    size="small"
+                    onClick={() => handleToggleClick(user)}
+                  >
+                    {user.state === 'activo' ? 'Inactivar' : 'Activar'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-          <div className="flex gap-2">
-            <button
-              className="bg-yellow-500 text-white px-3 py-1 rounded"
-              onClick={() => alert("Función de editar usuario pendiente")}
-            >
-              Editar
-            </button>
-
-            <button
-              className={`px-3 py-1 rounded ${u.state === 'activo' ? 'bg-red-500' : 'bg-green-500'} text-white`}
-              onClick={() => toggleUserState(u._id)}
-            >
-              {u.state === 'activo' ? 'Inactivar' : 'Activar'}
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+      >
+        <DialogTitle>Confirmar Cambio de Estado</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que deseas cambiar el estado de este usuario a {userToToggle?.state === 'activo' ? 'inactivo' : 'activo'}?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button onClick={handleToggleConfirm} color="primary" autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Paper>
   );
 }

@@ -4,7 +4,7 @@ import { TextField, Button, Typography, Container, Select, MenuItem, InputLabel,
 import { createPool } from '../../api/poolsApi';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Import the check icon
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'; 
 import { colombiaData } from '../../data/colombia.js';
 
 const CreatePool = () => {
@@ -80,7 +80,7 @@ const CreatePool = () => {
         e.preventDefault();
         setError('');
 
-   
+        // Validaciones básicas
         for (const field of ['nombre', 'direccion', 'altura', 'ancho', 'municipio', 'ciudad', 'categoria', 'profundidades', 'forma', 'uso', 'foto', 'hojaSeguridad', 'fichaTecnica']) {
             if (!formData[field] || (typeof formData[field] === 'string' && !formData[field].trim())) {
                 setError(`El campo ${field} es requerido.`);
@@ -105,41 +105,55 @@ const CreatePool = () => {
 
         const data = new FormData();
         
-        // Append all fields to FormData, processing 'profundidades' and 'bombas' specially
+        // 1. Agregamos campos simples y archivos principales
         for (const key in formData) {
-            if (key === 'profundidades') {
-                const profundidadesArray = formData.profundidades
-                    .split(',')
-                    .map(p => parseFloat(p.trim()))
-                    .filter(p => !isNaN(p) && p > 0);
-
-                if (profundidadesArray.length === 0) {
-                    setError('Las profundidades deben contener números válidos y positivos.');
-                    return;
-                }
-
-                for (let i = 0; i < profundidadesArray.length - 1; i++) {
-                    if (profundidadesArray[i] >= profundidadesArray[i + 1]) {
-                        setError('Las profundidades deben estar en orden ascendente.');
-                        return;
-                    }
-                }
-                data.append(key, JSON.stringify(profundidadesArray));
-
-            } else if (key === 'bombas') {
-                formData.bombas.forEach((bomba, index) => {
-                    for (const bombaKey in bomba) {
-                        data.append(`bombas[${index}][${bombaKey}]`, bomba[bombaKey]);
-                    }
-                });
-            } else {
+            // Saltamos 'bombas' y 'profundidades' para procesarlos manualmente abajo
+            if (key !== 'profundidades' && key !== 'bombas') {
                 data.append(key, formData[key]);
             }
         }
 
+        // 2. Procesamos Profundidades
+        const profundidadesArray = formData.profundidades
+            .split(',')
+            .map(p => parseFloat(p.trim()))
+            .filter(p => !isNaN(p) && p > 0);
+
+        if (profundidadesArray.length === 0) {
+            setError('Las profundidades deben contener números válidos y positivos.');
+            return;
+        }
+
+        for (let i = 0; i < profundidadesArray.length - 1; i++) {
+            if (profundidadesArray[i] >= profundidadesArray[i + 1]) {
+                setError('Las profundidades deben estar en orden ascendente.');
+                return;
+            }
+        }
+        data.append('profundidades', JSON.stringify(profundidadesArray));
+
+        // 3. Procesamos Bombas (CORRECCIÓN CLAVE)
+        // A. Extraemos la info de texto para enviarla como JSON string
+        const bombasInfo = formData.bombas.map(b => ({
+            marca: b.marca,
+            referencia: b.referencia,
+            potencia: b.potencia,
+            material: b.material,
+            seRepite: b.seRepite,
+            totalBombas: b.totalBombas
+        }));
+        data.append('bombasInfo', JSON.stringify(bombasInfo));
+
+        // B. Adjuntamos las fotos individualmente con indices coincidentes
+        formData.bombas.forEach((bomba, index) => {
+            if (bomba.foto) {
+                data.append(`bombas[${index}][foto]`, bomba.foto);
+            }
+        });
+
         try {
             await createPool(data);
-            navigate('/pools');
+            navigate('/piscinas'); // Asegúrate de que esta ruta exista en tu Router
         } catch (err) {
             console.error('Failed to create pool:', err);
             const errorMessage = err.response?.data?.message || err.message || 'Error al crear la piscina. Verifique los datos.';
@@ -205,6 +219,7 @@ const CreatePool = () => {
                     </Select>
                 </FormControl>
                 
+                {/* Campos de Archivos Principales */}
                 <Box sx={{ mt: 2, mb: 1, border: '1px dashed grey', p: 2, borderRadius: 1 }}>
                     <Button variant={formData.foto ? "contained" : "outlined"} component="label" fullWidth color={formData.foto ? "success" : "primary"}>
                         {formData.foto ? "Foto Principal Cargada" : "Subir Foto Principal (PNG/JPEG)"}

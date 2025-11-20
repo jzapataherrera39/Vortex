@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import Piscina from '../models/Piscina';
 import { uploadFromBuffer, deleteFromCloudinary } from '../utils/cloudinaryUploader';
@@ -15,10 +14,11 @@ const getPublicId = (url: string) => {
 // @access  Private/Admin
 const createPiscina = async (req: Request, res: Response) => {
     try {
-        const { nombre, direccion, altura, ancho, ciudad, municipio, categoria, profundidades, forma, uso, ...rest } = req.body;
+        // Nota: Extraemos bombasInfo en lugar de bombas
+        const { nombre, direccion, altura, ancho, ciudad, municipio, categoria, profundidades, forma, uso, bombasInfo, ...rest } = req.body;
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-        // --- File Uploads ---
+        // --- File Uploads (Archivos Principales) ---
         let fotoUrl, hojaSeguridadUrl, fichaTecnicaUrl;
         if (files.foto) {
             const result = await uploadFromBuffer(files.foto[0].buffer, 'piscinas/fotos');
@@ -37,16 +37,31 @@ const createPiscina = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Faltan archivos requeridos (foto, hojaSeguridad, fichaTecnica)' });
         }
 
-        // --- Dynamic Bomba Handling ---
+        // --- Dynamic Bomba Handling (Lógica Corregida) ---
         const bombasData = [];
-        const bombasFromRequest = req.body.bombas || [];
+        let bombasFromRequest = [];
+
+        // Parseamos el string JSON que viene del frontend
+        try {
+            if (bombasInfo) {
+                bombasFromRequest = JSON.parse(bombasInfo);
+            }
+        } catch (error) {
+            return res.status(400).json({ message: 'El campo bombasInfo tiene un formato JSON inválido' });
+        }
+
         for (let i = 0; i < bombasFromRequest.length; i++) {
             const bombaInfo = bombasFromRequest[i];
-            const bombaFile = files[`bombas[${i}][foto]`] ? files[`bombas[${i}][foto]`][0] : null;
+            
+            // Multer recibe el archivo con la key "bombas[i][foto]"
+            const fileKey = `bombas[${i}][foto]`;
+            const bombaFile = files[fileKey] ? files[fileKey][0] : null;
 
             if (!bombaFile) {
-                return res.status(400).json({ message: `Falta la foto para la bomba ${i}` });
+                return res.status(400).json({ message: `Falta la foto para la bomba #${i + 1}` });
             }
+
+            // Subir foto de la bomba a Cloudinary
             const uploadResult = await uploadFromBuffer(bombaFile.buffer, 'piscinas/bombas');
 
             const bomba = {
@@ -54,11 +69,12 @@ const createPiscina = async (req: Request, res: Response) => {
                 referencia: bombaInfo.referencia,
                 potencia: bombaInfo.potencia,
                 material: bombaInfo.material,
-                foto: uploadResult.secure_url,
-		seRepite: bombaInfo.seRepite,
-		totalBombas: bombaInfo.totalBombas
+                foto: uploadResult.secure_url, // Asignamos la URL generada
+                seRepite: bombaInfo.seRepite,
+                totalBombas: bombaInfo.totalBombas
             };
 
+            // Lógica de repetición
             if (bombaInfo.seRepite === 'si' && bombaInfo.totalBombas) {
                 const count = parseInt(bombaInfo.totalBombas, 10);
                 for (let j = 0; j < count; j++) {
@@ -191,6 +207,8 @@ const updatePiscina = async (req: Request, res: Response) => {
         }
 		piscina.forma = forma || piscina.forma;
 		piscina.uso = uso || piscina.uso;
+        
+        // NOTA: Si planeas actualizar bombas en el PUT, deberías implementar una lógica similar a la del createPiscina para manejar 'bombasInfo' y archivos nuevos.
 
         const updatedPiscina = await piscina.save();
         res.json(updatedPiscina);
