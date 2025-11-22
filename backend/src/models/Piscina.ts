@@ -1,17 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// Interface for the Pump sub-document
 export interface IBomba {
   marca: string;
   referencia: string;
-  foto: string; // URL to image
+  foto: string; 
   potencia: string;
   material: 'Sumergible' | 'Centrifuga';
   seRepite: 'si' | 'no';
   totalBombas?: number;
 }
 
-// Interface for the main Piscina document
+
 export interface IPiscina extends Document {
   nombre: string;
   direccion: string;
@@ -24,10 +23,10 @@ export interface IPiscina extends Document {
   profundidades: number[];
   forma: 'Rectangular' | 'Circular';
   uso: 'Privada' | 'Publica';
-  foto: string; // URL to image
+  foto: string; 
   bombas: IBomba[];
-  hojaSeguridad: string; // URL to PDF
-  fichaTecnica: string; // URL to PDF
+  hojaSeguridad: string; 
+  fichaTecnica: string;
 }
 
 const BombaSchema: Schema = new Schema({
@@ -51,6 +50,7 @@ const PiscinaSchema: Schema = new Schema({
   categoria: { type: String, enum: ['Niños', 'Adultos'], required: true },
   profundidades: {
     type: [Number],
+    
     required: true,
     validate: {
       validator: function (v: number[]) {

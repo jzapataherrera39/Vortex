@@ -14,7 +14,6 @@ const getPublicId = (url: string) => {
 // @access  Private/Admin
 const createPiscina = async (req: Request, res: Response) => {
     try {
-        // Nota: Extraemos bombasInfo en lugar de bombas
         const { nombre, direccion, altura, ancho, ciudad, municipio, categoria, profundidades, forma, uso, bombasInfo, ...rest } = req.body;
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -37,11 +36,10 @@ const createPiscina = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Faltan archivos requeridos (foto, hojaSeguridad, fichaTecnica)' });
         }
 
-        // --- Dynamic Bomba Handling (Lógica Corregida) ---
+        // --- Dynamic Bomba Handling ---
         const bombasData = [];
         let bombasFromRequest = [];
 
-        // Parseamos el string JSON que viene del frontend
         try {
             if (bombasInfo) {
                 bombasFromRequest = JSON.parse(bombasInfo);
@@ -53,7 +51,6 @@ const createPiscina = async (req: Request, res: Response) => {
         for (let i = 0; i < bombasFromRequest.length; i++) {
             const bombaInfo = bombasFromRequest[i];
             
-            // Multer recibe el archivo con la key "bombas[i][foto]"
             const fileKey = `bombas[${i}][foto]`;
             const bombaFile = files[fileKey] ? files[fileKey][0] : null;
 
@@ -61,7 +58,6 @@ const createPiscina = async (req: Request, res: Response) => {
                 return res.status(400).json({ message: `Falta la foto para la bomba #${i + 1}` });
             }
 
-            // Subir foto de la bomba a Cloudinary
             const uploadResult = await uploadFromBuffer(bombaFile.buffer, 'piscinas/bombas');
 
             const bomba = {
@@ -69,12 +65,11 @@ const createPiscina = async (req: Request, res: Response) => {
                 referencia: bombaInfo.referencia,
                 potencia: bombaInfo.potencia,
                 material: bombaInfo.material,
-                foto: uploadResult.secure_url, // Asignamos la URL generada
+                foto: uploadResult.secure_url,
                 seRepite: bombaInfo.seRepite,
                 totalBombas: bombaInfo.totalBombas
             };
 
-            // Lógica de repetición
             if (bombaInfo.seRepite === 'si' && bombaInfo.totalBombas) {
                 const count = parseInt(bombaInfo.totalBombas, 10);
                 for (let j = 0; j < count; j++) {
@@ -164,12 +159,14 @@ const updatePiscina = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Piscina no encontrada' });
         }
 
-        const { nombre, direccion, altura, ancho, ciudad, municipio, categoria, profundidades, forma, uso, ...rest } = req.body;
+        const { nombre, direccion, altura, ancho, ciudad, municipio, categoria, profundidades, forma, uso, bombasInfo, ...rest } = req.body;
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-        // --- File Updates ---
+  
         if (files.foto) {
+            // Borrar anterior
             await deleteFromCloudinary(getPublicId(piscina.foto));
+            // Subir nueva
             const result = await uploadFromBuffer(files.foto[0].buffer, 'piscinas/fotos');
             piscina.foto = result.secure_url;
         }
@@ -184,31 +181,103 @@ const updatePiscina = async (req: Request, res: Response) => {
             piscina.fichaTecnica = result.secure_url;
         }
 
-		// --- Update Fields ---
-		piscina.nombre = nombre || piscina.nombre;
-		piscina.direccion = direccion || piscina.direccion;
-		piscina.altura = altura || piscina.altura;
-		piscina.ancho = ancho || piscina.ancho;
-		piscina.ciudad = ciudad || piscina.ciudad;
-		piscina.municipio = municipio || piscina.municipio;
-		piscina.categoria = categoria || piscina.categoria;
+        // --- Update Basic Fields ---
+        piscina.nombre = nombre || piscina.nombre;
+        piscina.direccion = direccion || piscina.direccion;
+        piscina.altura = altura || piscina.altura;
+        piscina.ancho = ancho || piscina.ancho;
+        piscina.ciudad = ciudad || piscina.ciudad;
+        piscina.municipio = municipio || piscina.municipio;
+        piscina.categoria = categoria || piscina.categoria;
+        
         if (profundidades) {
             try {
                 if (typeof profundidades === 'string') {
                     piscina.profundidades = JSON.parse(profundidades);
                 } else if (typeof profundidades === 'object') {
                     piscina.profundidades = profundidades;
-                } else {
-                     return res.status(400).json({ message: 'El campo profundidades tiene un formato inválido' });
                 }
             } catch (error) {
                 return res.status(400).json({ message: 'El campo profundidades no es un JSON válido' });
             }
         }
-		piscina.forma = forma || piscina.forma;
-		piscina.uso = uso || piscina.uso;
+        piscina.forma = forma || piscina.forma;
+        piscina.uso = uso || piscina.uso;
         
-       
+      
+        if (bombasInfo) {
+            let bombasFromRequest = [];
+            try {
+                bombasFromRequest = JSON.parse(bombasInfo);
+            } catch (error) {
+                return res.status(400).json({ message: 'El campo bombasInfo tiene un formato JSON inválido' });
+            }
+
+            const newBombasData = [];
+
+            for (let i = 0; i < bombasFromRequest.length; i++) {
+                const bombaInfo = bombasFromRequest[i];
+                const fileKey = `bombas[${i}][foto]`;
+                const bombaFile = files[fileKey] ? files[fileKey][0] : null;
+
+                let finalFotoUrl = bombaInfo.foto; // Intentamos usar la URL que viene del frontend y cambio
+
+                // Si hay un archivo nuevo, lo subimos y reemplazamos la URL
+                if (bombaFile) {
+                    const uploadResult = await uploadFromBuffer(bombaFile.buffer, 'piscinas/bombas');
+                    finalFotoUrl = uploadResult.secure_url;
+                }
+                
+                // Si no hay ni archivo nuevo ni URL vieja válida
+                if (!finalFotoUrl) {
+                     return res.status(400).json({ message: `Falta la foto para la bomba #${i + 1} en la actualización` });
+                }
+
+                const bomba = {
+                    marca: bombaInfo.marca,
+                    referencia: bombaInfo.referencia,
+                    potencia: bombaInfo.potencia,
+                    material: bombaInfo.material,
+                    foto: finalFotoUrl,
+                    seRepite: bombaInfo.seRepite,
+                    totalBombas: bombaInfo.totalBombas
+                };
+
+                // Lógica de repetición
+                if (bombaInfo.seRepite === 'si' && bombaInfo.totalBombas) {
+                    const count = parseInt(bombaInfo.totalBombas, 10);
+                    for (let j = 0; j < count; j++) {
+                        newBombasData.push(bomba);
+                    }
+                } else {
+                    newBombasData.push(bomba);
+                }
+            }
+
+            // --- Limpieza de imágenes huérfanas en Cloudinary princio y---
+            // 1. Fotos que existían antes
+            const oldPhotos = piscina.bombas.map(b => b.foto);
+            // 2. Fotos que existirán ahora
+            const newPhotos = newBombasData.map(b => b.foto);
+            
+            // 3. Borrar las que ya no se usan (están en old pero no en new)
+            const photosToDelete = oldPhotos.filter(url => !newPhotos.includes(url));
+            
+            // Ejecutamos el borrado sin detener el flujo principal si falla una imagen
+            for (const url of photosToDelete) {
+                if (url) { 
+                    try {
+                        await deleteFromCloudinary(getPublicId(url));
+                    } catch (err) {
+                        console.error(`Error borrando imagen antigua ${url}:`, err);
+                    }
+                }
+            }
+
+      
+            piscina.bombas = newBombasData as any; 
+        }
+
         const updatedPiscina = await piscina.save();
         res.json(updatedPiscina);
 
@@ -224,6 +293,7 @@ const deletePiscina = async (req: Request, res: Response) => {
         const piscina = await Piscina.findById(req.params.id);
 
         if (piscina) {
+            // Delete files from Cloudinary
             await deleteFromCloudinary(getPublicId(piscina.foto));
             await deleteFromCloudinary(getPublicId(piscina.hojaSeguridad));
             await deleteFromCloudinary(getPublicId(piscina.fichaTecnica));
@@ -240,12 +310,12 @@ const deletePiscina = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error del servidor', error: error.message });
     }
 };
+
 const togglePiscinaStatus = async (req: Request, res: Response) => {
     try {
         const piscina = await Piscina.findById(req.params.id);
 
         if (piscina) {
-
             piscina.estado = piscina.estado === 'activo' ? 'inactivo' : 'activo';
             const updatedPiscina = await piscina.save();
             res.json(updatedPiscina);
