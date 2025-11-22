@@ -1,7 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
 
-// Configure cloudinary
 import '../config/cloudinary';
 
 export const uploadFromBuffer = (buffer: Buffer, folder: string): Promise<cloudinary.UploadApiResponse> => {

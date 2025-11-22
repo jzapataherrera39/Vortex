@@ -208,8 +208,7 @@ const updatePiscina = async (req: Request, res: Response) => {
 		piscina.forma = forma || piscina.forma;
 		piscina.uso = uso || piscina.uso;
         
-        // NOTA: Si planeas actualizar bombas en el PUT, deberías implementar una lógica similar a la del createPiscina para manejar 'bombasInfo' y archivos nuevos.
-
+       
         const updatedPiscina = await piscina.save();
         res.json(updatedPiscina);
 
@@ -219,15 +218,12 @@ const updatePiscina = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Delete a piscina
-// @route   DELETE /api/piscinas/:id
-// @access  Private/Admin
+
 const deletePiscina = async (req: Request, res: Response) => {
     try {
         const piscina = await Piscina.findById(req.params.id);
 
         if (piscina) {
-            // Delete files from Cloudinary
             await deleteFromCloudinary(getPublicId(piscina.foto));
             await deleteFromCloudinary(getPublicId(piscina.hojaSeguridad));
             await deleteFromCloudinary(getPublicId(piscina.fichaTecnica));
@@ -249,7 +245,7 @@ const togglePiscinaStatus = async (req: Request, res: Response) => {
         const piscina = await Piscina.findById(req.params.id);
 
         if (piscina) {
-            // Cambiar al estado opuesto
+
             piscina.estado = piscina.estado === 'activo' ? 'inactivo' : 'activo';
             const updatedPiscina = await piscina.save();
             res.json(updatedPiscina);

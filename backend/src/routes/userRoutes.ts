@@ -13,7 +13,6 @@ router.route('/:id')
   .put(protect, admin, updateUser)
   .delete(protect, admin, deleteUser);
 
-// Esta es la ruta clave que faltaba para inactivar
 router.route('/:id/toggle')
   .put(protect, admin, toggleUserStatus);
 

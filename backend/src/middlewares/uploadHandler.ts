@@ -18,8 +18,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
       cb(new Error('Tipo de archivo no válido, solo se permite PDF.'));
     }
   } else {
-    // If the fieldname doesn't match expected patterns, reject it.
-    cb(new Error(`Campo de archivo inesperado: ${file.fieldname}`));
+       cb(new Error(`Campo de archivo inesperado: ${file.fieldname}`));
   }
 };
 

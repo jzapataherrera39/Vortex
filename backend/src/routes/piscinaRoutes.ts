@@ -7,8 +7,7 @@ import { validateRequest } from '../middlewares/validateRequest';
 
 const router = Router();
 
-// Define the fields for multer.
-// This accepts a main 'foto', two documents, and up to 10 pump photos.
+
 const uploadFields = [
     { name: 'foto', maxCount: 1 },
     { name: 'hojaSeguridad', maxCount: 1 },

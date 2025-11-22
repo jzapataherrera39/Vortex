@@ -9,7 +9,7 @@ const generateToken = (id: string) => {
 };
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { nombre, apellido, cedula, email, password, rol } = req.body; // <-- FIX
+  const { nombre, apellido, cedula, email, password, rol } = req.body; 
 
   try {
     const userExists = await User.findOne({ email });
@@ -23,7 +23,7 @@ export const registerUser = async (req: Request, res: Response) => {
       apellido,
       cedula,
       email,
-      password, // <-- FIX
+      password, 
       rol,
     });
 
@@ -43,7 +43,7 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 export const authUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body; // <-- FIX
+  const { email, password } = req.body; 
 
   try {
     const user = await User.findOne({ email });
@@ -52,7 +52,7 @@ export const authUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'User is inactive' });
     }
 
-    if (user && (await user.matchPassword(password))) { // <-- FIX
+    if (user && (await user.matchPassword(password))) { 
       res.json({
         _id: user._id,
         nombre: user.nombre,

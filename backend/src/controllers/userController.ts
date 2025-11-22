@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 
-// @desc    Obtener todos los usuarios
-// @route   GET /api/users
+
 const getUsers = async (req: Request, res: Response) => {
     try {
         const users = await User.find({}).select('-password');
@@ -12,8 +11,6 @@ const getUsers = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Obtener usuario por ID
-// @route   GET /api/users/:id
 const getUserById = async (req: Request, res: Response) => {
     try {
         const user = await User.findById(req.params.id).select('-password');
@@ -27,8 +24,7 @@ const getUserById = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Crear un usuario
-// @route   POST /api/users
+
 const createUser = async (req: Request, res: Response) => {
     try {
         const { nombre, apellido, cedula, email, password, rol } = req.body;
@@ -43,7 +39,7 @@ const createUser = async (req: Request, res: Response) => {
             apellido,
             cedula,
             email,
-            password, // El modelo se encargará de encriptarla
+            password, 
             rol,
             state: 'activo'
         });
@@ -63,8 +59,6 @@ const createUser = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Actualizar usuario
-// @route   PUT /api/users/:id
 const updateUser = async (req: Request, res: Response) => {
     try {
         const user = await User.findById(req.params.id);
@@ -76,7 +70,7 @@ const updateUser = async (req: Request, res: Response) => {
             user.email = req.body.email || user.email;
             user.rol = req.body.rol || user.rol;
             
-            // Solo actualizamos password si viene en el body
+
             if (req.body.password) {
                 user.password = req.body.password;
             }
@@ -96,14 +90,13 @@ const updateUser = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Inactivar/Activar usuario
-// @route   PUT /api/users/:id/toggle
+
 const toggleUserStatus = async (req: Request, res: Response) => {
     try {
         const user = await User.findById(req.params.id);
 
         if (user) {
-            // Invertir estado o usar el que viene en el body
+
             user.state = req.body.state || (user.state === 'activo' ? 'inactivo' : 'activo');
             
             const updatedUser = await user.save();
@@ -120,7 +113,7 @@ const deleteUser = async (req: Request, res: Response) => {
         const user = await User.findById(req.params.id);
 
         if (user) {
-            await user.deleteOne(); // Borra el documento de MongoDB
+            await user.deleteOne(); 
             res.json({ message: 'Usuario eliminado correctamente' });
         } else {
             res.status(404).json({ message: 'Usuario no encontrado' });
